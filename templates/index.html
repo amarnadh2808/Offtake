@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Logistics Portal</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <div>
+                <h1 class="logo">LOGISTICS</h1>
+                <p class="subtitle" id="header-subtitle">STOCK TRACKING</p>
+            </div>
+            <button id="admin-access-btn" class="btn-outline-white">ADMIN ACCESS</button>
+        </div>
+    </header>
+
+    <main class="container">
+        
+        <!-- DELIVERY VIEW -->
+        <div id="delivery-view">
+            <section class="selection-panel">
+                <div class="form-group">
+                    <label for="distributor">DISTRIBUTOR</label>
+                    <select id="distributor" disabled>
+                        <option value="">LOADING...</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="dsr">DELIVERY PARTNER (DSR)</label>
+                    <select id="dsr" disabled>
+                        <option value="">SELECT DISTRIBUTOR FIRST</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="beat">BEAT AREA</label>
+                    <select id="beat" disabled>
+                        <option value="">SELECT DSR FIRST</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="retailer">RETAILER</label>
+                    <select id="retailer" disabled>
+                        <option value="">SELECT BEAT AREA FIRST</option>
+                    </select>
+                </div>
+            </section>
+
+            <section id="product-panel" class="product-panel hidden">
+                <h2 class="section-title">PRODUCTS RECORD</h2>
+                <div id="product-list" class="product-list">
+                    <!-- Products injected by JS -->
+                </div>
+                <button id="submit-btn" class="btn-primary mt-4">SUBMIT CLOSING STOCK</button>
+            </section>
+            
+            <div id="success-message" class="hidden alert alert-success mt-4">
+                STOCK DATA SUBMITTED SUCCESSFULLY.
+            </div>
+        </div>
+
+        <!-- ADMIN VIEW -->
+        <div id="admin-view" class="hidden">
+            <section class="admin-panel">
+                <h2 class="section-title">DATA MANAGEMENT</h2>
+                
+                <!-- FILE OPERATIONS CARD -->
+                <div class="card mt-4">
+                    <h3>EXCEL FILE OPERATIONS</h3>
+                    <p>Download delivery partners' submitted closing stock data or download the completely updated master dataset.</p>
+                    <div class="btn-group mt-2">
+                        <button id="download-btn" class="btn-primary">DOWNLOAD SUBMISSIONS EXCEL</button>
+                        <button id="download-master-btn" class="btn-secondary">DOWNLOAD UPDATED MASTER EXCEL</button>
+                    </div>
+                </div>
+
+                <!-- DYNAMIC ENTITY MANAGEMENT CARDS -->
+                <h2 class="section-title mt-4">MANAGE NETWORK ENTITIES</h2>
+                <p class="subtitle text-dark mb-4">Click to expand any section below to directly add or delete items from the active database.</p>
+                
+                <!-- DISTRIBUTORS -->
+                <div class="card accordion-card mt-2">
+                    <div class="accordion-header" id="toggle-distributors">
+                        <h3>DISTRIBUTORS (<span id="count-distributor">0</span>)</h3>
+                        <span class="toggle-icon">+</span>
+                    </div>
+                    <div class="accordion-body hidden" id="panel-distributors">
+                        <div class="entity-add-form mt-2">
+                            <input type="text" id="add-distributor-input" placeholder="Enter new Distributor name">
+                            <button id="add-distributor-btn" class="btn-small-primary">ADD</button>
+                        </div>
+                        <div class="search-bar-row mt-3">
+                            <input type="text" id="search-distributor" placeholder="🔍 Filter & search distributors..." class="search-input">
+                        </div>
+                        <div class="entity-list mt-2" id="list-distributor">
+                            <!-- Injected by JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- DELIVERY PARTNERS (DSR) -->
+                <div class="card accordion-card mt-2">
+                    <div class="accordion-header" id="toggle-dsrs">
+                        <h3>DELIVERY PARTNERS / DSRs (<span id="count-dsr">0</span>)</h3>
+                        <span class="toggle-icon">+</span>
+                    </div>
+                    <div class="accordion-body hidden" id="panel-dsrs">
+                        <div class="entity-add-form mt-2 flex-col-mobile">
+                            <select id="dsr-parent-select" class="select-inline">
+                                <option value="">SELECT DISTRIBUTOR...</option>
+                            </select>
+                            <input type="text" id="add-dsr-input" placeholder="Enter new DSR name">
+                            <button id="add-dsr-btn" class="btn-small-primary">ADD</button>
+                        </div>
+                        <div class="search-bar-row mt-3">
+                            <input type="text" id="search-dsr" placeholder="🔍 Filter & search delivery partners..." class="search-input">
+                        </div>
+                        <div class="entity-list mt-2" id="list-dsr">
+                            <!-- Injected by JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- BEAT AREAS -->
+                <div class="card accordion-card mt-2">
+                    <div class="accordion-header" id="toggle-beats">
+                        <h3>BEAT AREAS (<span id="count-beat">0</span>)</h3>
+                        <span class="toggle-icon">+</span>
+                    </div>
+                    <div class="accordion-body hidden" id="panel-beats">
+                        <div class="entity-add-form mt-2 flex-col-mobile">
+                            <select id="beat-parent-select" class="select-inline">
+                                <option value="">SELECT DSR...</option>
+                            </select>
+                            <input type="text" id="add-beat-input" placeholder="Enter new Beat Area name">
+                            <button id="add-beat-btn" class="btn-small-primary">ADD</button>
+                        </div>
+                        <div class="search-bar-row mt-3">
+                            <input type="text" id="search-beat" placeholder="🔍 Filter & search beat areas..." class="search-input">
+                        </div>
+                        <div class="entity-list mt-2" id="list-beat">
+                            <!-- Injected by JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RETAILERS -->
+                <div class="card accordion-card mt-2">
+                    <div class="accordion-header" id="toggle-retailers">
+                        <h3>RETAILERS (<span id="count-retailer">0</span>)</h3>
+                        <span class="toggle-icon">+</span>
+                    </div>
+                    <div class="accordion-body hidden" id="panel-retailers">
+                        <div class="entity-add-form mt-2 flex-col-mobile">
+                            <select id="retailer-parent-select" class="select-inline">
+                                <option value="">SELECT BEAT AREA...</option>
+                            </select>
+                            <input type="text" id="add-retailer-input" placeholder="Enter new Retailer name">
+                            <button id="add-retailer-btn" class="btn-small-primary">ADD</button>
+                        </div>
+                        <div class="search-bar-row mt-3">
+                            <input type="text" id="search-retailer" placeholder="🔍 Filter & search retailers..." class="search-input">
+                        </div>
+                        <div class="entity-list mt-2" id="list-retailer">
+                            <!-- Injected by JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STORE PRODUCTS & INVENTORY -->
+                <div class="card accordion-card mt-2">
+                    <div class="accordion-header" id="toggle-products">
+                        <h3>STORES & PRODUCT INVENTORY (<span id="count-product">0</span>)</h3>
+                        <span class="toggle-icon">+</span>
+                    </div>
+                    <div class="accordion-body hidden" id="panel-products">
+                        <div class="entity-add-form mt-2 flex-col-mobile flex-wrap">
+                            <select id="product-parent-select" class="select-inline">
+                                <option value="">SELECT STORE (RETAILER)...</option>
+                            </select>
+                            <input type="text" id="add-product-input" placeholder="Product Name / Description" class="flex-grow">
+                            <input type="text" id="add-product-sku" placeholder="SKU (optional)" class="input-small">
+                            <input type="number" id="add-product-amount" placeholder="Amount" min="0" class="input-small">
+                            <button id="add-product-btn" class="btn-small-primary">ADD PRODUCT</button>
+                        </div>
+                        <div class="search-bar-row mt-3">
+                            <input type="text" id="search-product" placeholder="🔍 Filter by store, product name, or SKU..." class="search-input">
+                        </div>
+                        <div class="entity-list mt-2" id="list-product">
+                            <!-- Injected by JS -->
+                        </div>
+                    </div>
+                </div>
+
+            </section>
+        </div>
+
+    </main>
+
+    <!-- LOGIN MODAL -->
+    <div id="login-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <button id="close-modal" class="close-btn">&times;</button>
+            <h2 class="section-title">ADMIN LOGIN</h2>
+            <div class="form-group mt-4">
+                <label>USERNAME</label>
+                <input type="text" id="login-username" class="modal-input" placeholder="Enter Username">
+            </div>
+            <div class="form-group">
+                <label>PASSWORD</label>
+                <input type="password" id="login-password" class="modal-input" placeholder="Enter Password">
+            </div>
+            <div id="login-error" class="hidden alert alert-error mt-2">INVALID CREDENTIALS</div>
+            <button id="login-btn" class="btn-primary mt-4">LOGIN</button>
+        </div>
+    </div>
+
+    <!-- DELETE CONFIRMATION MODAL -->
+    <div id="confirm-modal" class="modal-overlay hidden">
+        <div class="modal-content border-danger">
+            <h2 class="section-title text-danger">CONFIRM DELETION</h2>
+            <p id="confirm-msg" class="mt-2 text-dark">Are you sure you want to delete this record?</p>
+            <div class="modal-btn-row mt-4">
+                <button id="confirm-cancel-btn" class="btn-secondary">CANCEL</button>
+                <button id="confirm-delete-btn" class="btn-danger">YES, DELETE</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>

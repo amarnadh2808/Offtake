@@ -1,0 +1,104 @@
+[
+    {
+        "distributor": "INTELLIGENT RETAIL PRIVATE LIMITED",
+        "dsr": "MD REYAZ",
+        "beat_area": "BG ROAD 1-ISRO",
+        "retailer": "FRESH MORE SUPER MARKET",
+        "products": [
+            {
+                "parent_material_desc": "PA SHMP BTL ALOE VERA 80 ML",
+                "club_sku": "80ml",
+                "closing_stock": 5
+            },
+            {
+                "parent_material_desc": "PA SHMP BTL AMLA 80ML",
+                "club_sku": "80ml",
+                "closing_stock": 10
+            },
+            {
+                "parent_material_desc": "PA SHMP BTL SHIKAKAI 80 ML",
+                "club_sku": "80ml",
+                "closing_stock": 20
+            }
+        ],
+        "timestamp": "2026-07-24T20:59:38.117Z"
+    },
+    {
+        "distributor": "B G S ENTERPRISES",
+        "dsr": "KRISHNA M B",
+        "beat_area": "8TH MILE",
+        "retailer": "ROYAL MART SUPER MARKET-1",
+        "products": [
+            {
+                "parent_material_desc": "PA SHMP BTL ALOE VERA 170 ML",
+                "club_sku": "170ml",
+                "closing_stock": 4
+            },
+            {
+                "parent_material_desc": "PA SHMP BTL ALOE VERA 340ML",
+                "club_sku": "340ml",
+                "closing_stock": 5
+            },
+            {
+                "parent_material_desc": "PA SHMP BTL ALOE VERA 80 ML",
+                "club_sku": "80ml",
+                "closing_stock": 6
+            },
+            {
+                "parent_material_desc": "PA SHMP BTL AMLA 170ML",
+                "club_sku": "170ml",
+                "closing_stock": 54
+            },
+            {
+                "parent_material_desc": "PA SHMP BTL AMLA 340 ML",
+                "club_sku": "340ml",
+                "closing_stock": 54
+            },
+            {
+                "parent_material_desc": "PA SHMP BTL SHIKAKAI 170 ML",
+                "club_sku": "170ml",
+                "closing_stock": 343
+            },
+            {
+                "parent_material_desc": "PA SHMP BTL SHIKAKAI 340 ML",
+                "club_sku": "340ml",
+                "closing_stock": 344
+            }
+        ],
+        "timestamp": "2026-07-24T21:14:57.129Z"
+    },
+    {
+        "distributor": "INTELLIGENT RETAIL PRIVATE LIMITED",
+        "dsr": "RAJA SEKHAR",
+        "beat_area": "Harlur-ISRO",
+        "retailer": "AMRUTHA SUPER MARKET",
+        "products": [
+            {
+                "parent_material_desc": "PA SHMP BTL ALOE VERA 170 ML",
+                "club_sku": "170ml",
+                "closing_stock": 22
+            },
+            {
+                "parent_material_desc": "PA SHMP BTL ALOE VERA 80 ML",
+                "club_sku": "80ml",
+                "closing_stock": 23
+            },
+            {
+                "parent_material_desc": "PA SHMP BTL AMLA 80ML",
+                "club_sku": "80ml",
+                "closing_stock": 22
+            },
+            {
+                "parent_material_desc": "PA SHMP BTL SHIKAKAI 170 ML",
+                "club_sku": "170ml",
+                "closing_stock": 33
+            },
+            {
+                "parent_material_desc": "PA SHMP BTL SHIKAKAI 80 ML",
+                "club_sku": "80ml",
+                "closing_stock": 33
+            }
+        ],
+        "timestamp": "2026-07-25T05:13:40.089Z"
+    }
+]
