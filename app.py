@@ -31,9 +31,21 @@ def require_admin(f):
         return f(*args, **kwargs)
     return decorated
 
+import math
+
+def clean_nan(obj):
+    if isinstance(obj, float) and math.isnan(obj):
+        return None
+    elif isinstance(obj, dict):
+        return {k: clean_nan(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [clean_nan(i) for i in obj]
+    return obj
+
 def get_master_data_json():
     try:
         data = list(master_col.find({}, {'_id': False}))
+        data = clean_nan(data)
         return json.dumps(data)
     except Exception as e:
         print("Error reading from MongoDB:", e)
@@ -219,6 +231,7 @@ def add_entity():
         df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
         
         # Save back to MongoDB
+        df = df.replace({np.nan: None})
         master_col.delete_many({})
         records = df.to_dict('records')
         if records:
@@ -268,6 +281,7 @@ def delete_entity():
                 df = df[df[target_col] != name]
                 
         # Save back to MongoDB
+        df = df.replace({np.nan: None})
         master_col.delete_many({})
         records = df.to_dict('records')
         if records:
@@ -291,6 +305,7 @@ def upload_master():
     if file and file.filename.endswith('.xlsx'):
         try:
             df = pd.read_excel(file)
+            df = df.replace({np.nan: None})
             records = df.to_dict('records')
             
             master_col.delete_many({})
