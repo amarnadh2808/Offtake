@@ -182,20 +182,22 @@ function renderProducts(products) {
     products.forEach((prod, index) => {
         const div = document.createElement('div');
         div.className = 'product-item';
-        const apr = prod['Apr'] || 0;
-        const may = prod['May'] || 0;
-        const jun = prod['Jun'] || 0;
-        const jul = prod['Jul'] || 0;
-        const total = prod['Total'] !== undefined && prod['Total'] !== null ? prod['Total'] : (apr + may + jun + jul);
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        let monthBoxes = '';
+        let calcTotal = 0;
+        months.forEach(m => {
+            const val = prod[m] || 0;
+            calcTotal += val;
+            monthBoxes += `<div class="stat-box"><div class="stat-label">${m.toUpperCase()}</div><div class="stat-value">${val}</div></div>`;
+        });
+        const total = prod['Total'] !== undefined && prod['Total'] !== null ? prod['Total'] : calcTotal;
+        const yearText = prod['Year'] ? ` | YEAR: ${prod['Year']}` : '';
 
         div.innerHTML = `
             <div class="product-name">${prod['parent_material_desc']}</div>
-            <div class="product-sku">SKU: ${prod['club_sku'] || 'N/A'}</div>
+            <div class="product-sku">SKU: ${prod['club_sku'] || 'N/A'}${yearText}</div>
             <div class="sales-grid">
-                <div class="stat-box"><div class="stat-label">APR</div><div class="stat-value">${apr}</div></div>
-                <div class="stat-box"><div class="stat-label">MAY</div><div class="stat-value">${may}</div></div>
-                <div class="stat-box"><div class="stat-label">JUN</div><div class="stat-value">${jun}</div></div>
-                <div class="stat-box"><div class="stat-label">JUL</div><div class="stat-value">${jul}</div></div>
+                ${monthBoxes}
                 <div class="stat-box"><div class="stat-label">TOTAL</div><div class="stat-value">${total}</div></div>
             </div>
             <div class="input-row">
@@ -408,11 +410,15 @@ function setupSearchFilter(inputId, listId) {
     if (!input || !list) return;
     
     input.addEventListener('input', () => {
-        const query = input.value.toLowerCase().trim();
+        // Split search query into individual words/tokens
+        const queryWords = input.value.toLowerCase().trim().split(/\s+/).filter(w => w);
         const items = list.querySelectorAll('.entity-item');
         items.forEach(item => {
             const text = item.textContent.toLowerCase();
-            if (text.includes(query)) {
+            // Check if every word in the search query exists somewhere in the item text
+            const matchesAll = queryWords.length === 0 || queryWords.every(word => text.includes(word));
+            
+            if (matchesAll) {
                 item.style.display = '';
             } else {
                 item.style.display = 'none';
@@ -532,18 +538,18 @@ function renderProductList(listId, items) {
         const name = prod['parent_material_desc'];
         const store = prod['retailer_name'];
         const sku = prod['club_sku'] || 'N/A';
-        const apr = prod['Apr'] || 0;
-        const may = prod['May'] || 0;
-        const jun = prod['Jun'] || 0;
-        const jul = prod['Jul'] || 0;
-        const amt = prod['Total'] !== undefined && prod['Total'] !== null ? prod['Total'] : (apr + may + jun + jul);
+        const yearMeta = prod['Year'] ? ` | Year: ${prod['Year']}` : '';
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        let calcTotal = 0;
+        months.forEach(m => calcTotal += (prod[m] || 0));
+        const amt = prod['Total'] !== undefined && prod['Total'] !== null ? prod['Total'] : calcTotal;
         
         const row = document.createElement('div');
         row.className = 'entity-item';
         row.innerHTML = `
             <div>
                 <span class="entity-name">${name}</span>
-                <span class="entity-meta">[Store: ${store} | SKU: ${sku} | Amount: ${amt}]</span>
+                <span class="entity-meta">[Store: ${store} | SKU: ${sku}${yearMeta} | Amount: ${amt}]</span>
             </div>
             <button class="btn-small-danger" data-name="${name}" data-store="${store}">DELETE</button>
         `;
@@ -647,11 +653,15 @@ if (addProdBtn) {
         const parentSel = document.getElementById('product-parent-select');
         const nameInp = document.getElementById('add-product-input');
         const skuInp = document.getElementById('add-product-sku');
+        const monthSel = document.getElementById('add-product-month');
+        const yearSel = document.getElementById('add-product-year');
         const amtInp = document.getElementById('add-product-amount');
         
         const store = parentSel ? parentSel.value : '';
         const name = nameInp ? nameInp.value.trim() : '';
         const sku = skuInp ? skuInp.value.trim() : '';
+        const month = monthSel ? monthSel.value : 'Total';
+        const year = yearSel ? yearSel.value : '';
         const amount = amtInp ? amtInp.value.trim() : '0';
         
         if (!store) {
@@ -669,13 +679,15 @@ if (addProdBtn) {
             const res = await fetch('/api/admin/entity', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-Admin-Key': authToken },
-                body: JSON.stringify({ type: 'store_product', name: name, parent: store, sku: sku, amount: amount })
+                body: JSON.stringify({ type: 'store_product', name: name, parent: store, sku: sku, amount: amount, month: month, year: year })
             });
             const resData = await res.json();
             if (res.ok) {
                 if (nameInp) nameInp.value = '';
                 if (skuInp) skuInp.value = '';
                 if (amtInp) amtInp.value = '';
+                if (monthSel) monthSel.value = 'Total';
+                if (yearSel) yearSel.value = '';
                 await init();
             } else {
                 alert(resData.error || 'Failed to add product to store.');
@@ -686,6 +698,49 @@ if (addProdBtn) {
             addProdBtn.textContent = 'ADD PRODUCT';
             addProdBtn.disabled = false;
         }
+    });
+}
+
+// MASTER DATA BULK UPLOAD
+const masterUploadBtn = document.getElementById('master-upload-btn');
+const masterUploadInput = document.getElementById('master-upload-input');
+if (masterUploadBtn && masterUploadInput) {
+    masterUploadBtn.addEventListener('click', async () => {
+        const file = masterUploadInput.files[0];
+        if (!file) {
+            alert("Please select an Excel file (.xlsx) first.");
+            return;
+        }
+        
+        showConfirmModal("WARNING: This will completely replace the entire master dataset on the website. Existing manual additions will be lost. Are you absolutely sure?", async () => {
+            masterUploadBtn.textContent = 'UPLOADING...';
+            masterUploadBtn.disabled = true;
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            try {
+                const res = await fetch('/api/admin/upload_master', {
+                    method: 'POST',
+                    headers: { 'X-Admin-Key': authToken },
+                    body: formData
+                });
+                const resData = await res.json();
+                
+                if (res.ok) {
+                    alert("Master Data updated successfully!");
+                    masterUploadInput.value = '';
+                    await init(); // Reload data across the site
+                } else {
+                    alert(resData.error || 'Failed to upload master data.');
+                }
+            } catch(e) {
+                alert('Network error during upload.');
+            } finally {
+                masterUploadBtn.textContent = 'UPLOAD & OVERWRITE';
+                masterUploadBtn.disabled = false;
+            }
+        });
     });
 }
 

@@ -80,6 +80,15 @@
                     </div>
                 </div>
 
+                <div class="card mt-2 border-danger">
+                    <h3>BULK MASTER DATA UPLOAD</h3>
+                    <p class="text-danger font-weight-bold">Warning: Uploading a new master dataset here will completely overwrite and replace the existing data on the website!</p>
+                    <div class="input-row mt-2" style="flex-wrap: wrap;">
+                        <input type="file" id="master-upload-input" accept=".xlsx" class="flex-grow">
+                        <button id="master-upload-btn" class="btn-small-danger">UPLOAD & OVERWRITE</button>
+                    </div>
+                </div>
+
                 <!-- DYNAMIC ENTITY MANAGEMENT CARDS -->
                 <h2 class="section-title mt-4">MANAGE NETWORK ENTITIES</h2>
                 <p class="subtitle text-dark mb-4">Click to expand any section below to directly add or delete items from the active database.</p>
@@ -185,7 +194,41 @@
                                 <option value="">SELECT STORE (RETAILER)...</option>
                             </select>
                             <input type="text" id="add-product-input" placeholder="Product Name / Description" class="flex-grow">
-                            <input type="text" id="add-product-sku" placeholder="SKU (optional)" class="input-small">
+                            <input type="text" id="add-product-sku" placeholder="SKU (opt)" class="input-small">
+                            <select id="add-product-month" class="input-small">
+                                <option value="Total">Total Stock</option>
+                                <option value="Jan">January</option>
+                                <option value="Feb">February</option>
+                                <option value="Mar">March</option>
+                                <option value="Apr">April</option>
+                                <option value="May">May</option>
+                                <option value="Jun">June</option>
+                                <option value="Jul">July</option>
+                                <option value="Aug">August</option>
+                                <option value="Sep">September</option>
+                                <option value="Oct">October</option>
+                                <option value="Nov">November</option>
+                                <option value="Dec">December</option>
+                            </select>
+                            <select id="add-product-year" class="input-small">
+                                <option value="">Year (Opt)</option>
+                                <option value="2025">2025</option>
+                                <option value="2026">2026</option>
+                                <option value="2027">2027</option>
+                                <option value="2028">2028</option>
+                                <option value="2029">2029</option>
+                                <option value="2030">2030</option>
+                                <option value="2031">2031</option>
+                                <option value="2032">2032</option>
+                                <option value="2033">2033</option>
+                                <option value="2034">2034</option>
+                                <option value="2035">2035</option>
+                                <option value="2036">2036</option>
+                                <option value="2037">2037</option>
+                                <option value="2038">2038</option>
+                                <option value="2039">2039</option>
+                                <option value="2040">2040</option>
+                            </select>
                             <input type="number" id="add-product-amount" placeholder="Amount" min="0" class="input-small">
                             <button id="add-product-btn" class="btn-small-primary">ADD PRODUCT</button>
                         </div>

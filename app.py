@@ -181,12 +181,24 @@ def add_entity():
                 amt = float(data.get('amount', 0))
             except:
                 amt = 0
-            if 'Total' in df.columns:
+            
+            month = data.get('month', 'Total')
+            year = data.get('year', '').strip()
+            if year:
+                new_row['Year'] = year
+            
+            # Initialize all standard columns to 0 for this new record
+            all_months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+            for m in all_months + ['Total']:
+                if m not in df.columns:
+                    df[m] = 0
+                new_row[m] = 0
+                
+            if month in all_months:
+                new_row[month] = amt
                 new_row['Total'] = amt
             else:
                 new_row['Total'] = amt
-            if 'Jul' in df.columns:
-                new_row['Jul'] = amt
         else:
             return jsonify({"error": "Invalid entity type."}), 400
             
@@ -239,6 +251,34 @@ def delete_entity():
     except Exception as e:
         print("Error deleting entity:", e)
         return jsonify({"error": str(e)}), 500
+
+@app.route('/api/admin/upload_master', methods=['POST'])
+@require_admin
+def upload_master():
+    if 'file' not in request.files:
+        return jsonify({"error": "No file part in the request"}), 400
+        
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({"error": "No file selected for uploading"}), 400
+        
+    if file and file.filename.endswith('.xlsx'):
+        try:
+            # We first try to read it to ensure it's a valid pandas excel file
+            df = pd.read_excel(file)
+            
+            # Ensure the directory exists
+            os.makedirs(DATA_DIR, exist_ok=True)
+            
+            # Save the file replacing the old master data
+            df.to_excel(MASTER_EXCEL_PATH, index=False)
+            
+            return jsonify({"status": "success", "message": "Master data updated successfully!"})
+        except Exception as e:
+            print("Error uploading master data:", e)
+            return jsonify({"error": "Failed to parse or save the uploaded Excel file. Ensure it is a valid .xlsx file."}), 500
+    else:
+        return jsonify({"error": "Allowed file type is .xlsx"}), 400
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
