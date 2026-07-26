@@ -3,9 +3,11 @@ import json
 import pandas as pd
 import numpy as np
 from flask import Flask, request, jsonify, send_file, render_template
+from flask_cors import CORS
 from functools import wraps
 
-app = Flask(__name__, static_folder='static', template_folder='templates')
+app = Flask(__name__, static_folder='static', template_folder='.')
+CORS(app)
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
 MASTER_EXCEL_PATH = os.path.join(DATA_DIR, 'master_data.xlsx')

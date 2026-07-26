@@ -1,3 +1,4 @@
+const API_BASE_URL = window.location.hostname.includes('localhost') || window.location.hostname == '127.0.0.1' ? '' : 'https://offtake-backend.onrender.com';
 let masterData = [];
 let authToken = null;
 
@@ -63,7 +64,7 @@ function showConfirmModal(message, onConfirm) {
 
 async function init() {
     try {
-        const response = await fetch('/api/data');
+        const response = await fetch(API_BASE_URL + '/api/data');
         masterData = await response.json();
         
         const distributors = [...new Set(masterData.map(item => item['Distributor Name']))].filter(Boolean);
@@ -245,7 +246,7 @@ if (submitBtn) {
         submitBtn.textContent = 'SUBMITTING...';
 
         try {
-            const response = await fetch('/api/submit', {
+            const response = await fetch(API_BASE_URL + '/api/submit', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
@@ -296,7 +297,7 @@ if (loginBtn) {
         
         loginBtn.textContent = "VERIFYING...";
         try {
-            const res = await fetch('/api/login', {
+            const res = await fetch(API_BASE_URL + '/api/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({username: u, password: p})
@@ -330,7 +331,7 @@ if (loginBtn) {
 if (downloadBtn) {
     downloadBtn.addEventListener('click', async () => {
         try {
-            const res = await fetch('/api/admin/download', {
+            const res = await fetch(API_BASE_URL + '/api/admin/download', {
                 headers: { 'X-Admin-Key': authToken }
             });
             if (res.ok) {
@@ -355,7 +356,7 @@ if (downloadBtn) {
 if (downloadMasterBtn) {
     downloadMasterBtn.addEventListener('click', async () => {
         try {
-            const res = await fetch('/api/admin/download_master', {
+            const res = await fetch(API_BASE_URL + '/api/admin/download_master', {
                 headers: { 'X-Admin-Key': authToken }
             });
             if (res.ok) {
@@ -494,7 +495,7 @@ function renderEntityList(listId, items, type) {
                 btn.textContent = 'DELETING...';
                 btn.disabled = true;
                 try {
-                    const res = await fetch('/api/admin/entity', {
+                    const res = await fetch(API_BASE_URL + '/api/admin/entity', {
                         method: 'DELETE',
                         headers: {
                             'Content-Type': 'application/json',
@@ -564,7 +565,7 @@ function renderProductList(listId, items) {
                 btn.textContent = 'DELETING...';
                 btn.disabled = true;
                 try {
-                    const res = await fetch('/api/admin/entity', {
+                    const res = await fetch(API_BASE_URL + '/api/admin/entity', {
                         method: 'DELETE',
                         headers: { 'Content-Type': 'application/json', 'X-Admin-Key': authToken },
                         body: JSON.stringify({ type: 'store_product', name: entityName, parent: storeName })
@@ -615,7 +616,7 @@ function setupAddEntity(btnId, inputId, parentSelectId, type, parentRequiredName
             btn.textContent = 'ADDING...';
             btn.disabled = true;
             try {
-                const res = await fetch('/api/admin/entity', {
+                const res = await fetch(API_BASE_URL + '/api/admin/entity', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -676,7 +677,7 @@ if (addProdBtn) {
         addProdBtn.textContent = 'ADDING...';
         addProdBtn.disabled = true;
         try {
-            const res = await fetch('/api/admin/entity', {
+            const res = await fetch(API_BASE_URL + '/api/admin/entity', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-Admin-Key': authToken },
                 body: JSON.stringify({ type: 'store_product', name: name, parent: store, sku: sku, amount: amount, month: month, year: year })
@@ -720,7 +721,7 @@ if (masterUploadBtn && masterUploadInput) {
             formData.append('file', file);
             
             try {
-                const res = await fetch('/api/admin/upload_master', {
+                const res = await fetch(API_BASE_URL + '/api/admin/upload_master', {
                     method: 'POST',
                     headers: { 'X-Admin-Key': authToken },
                     body: formData
