@@ -76,6 +76,8 @@ def submit():
         print(e)
         return jsonify({"error": str(e)}), 500
 
+import io
+
 @app.route('/api/admin/download', methods=['GET'])
 @require_admin
 def download():
@@ -102,10 +104,12 @@ def download():
         return "No submission data found.", 404
 
     df = pd.DataFrame(rows)
-    export_path = os.path.join(DATA_DIR, 'export.xlsx')
-    df.to_excel(export_path, index=False)
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False)
+    output.seek(0)
     
-    return send_file(export_path, as_attachment=True, download_name='closing_stock_submissions.xlsx')
+    return send_file(output, as_attachment=True, download_name='closing_stock_submissions.xlsx')
 
 @app.route('/api/admin/download_master', methods=['GET'])
 @require_admin
@@ -115,10 +119,12 @@ def download_master():
         return "Master file is empty.", 404
     
     df = pd.DataFrame(data)
-    export_path = os.path.join(DATA_DIR, 'export_master.xlsx')
-    df.to_excel(export_path, index=False)
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False)
+    output.seek(0)
     
-    return send_file(export_path, as_attachment=True, download_name='updated_master_data.xlsx')
+    return send_file(output, as_attachment=True, download_name='updated_master_data.xlsx')
 
 @app.route('/api/admin/entity', methods=['POST'])
 @require_admin
