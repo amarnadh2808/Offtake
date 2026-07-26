@@ -5,14 +5,18 @@ import numpy as np
 from flask import Flask, request, jsonify, send_file, render_template
 from flask_cors import CORS
 from functools import wraps
+from pymongo import MongoClient
 
 app = Flask(__name__, static_folder='static', template_folder='.')
 CORS(app)
 
-DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
-MASTER_EXCEL_PATH = os.path.join(DATA_DIR, 'master_data.xlsx')
-SUBMISSIONS_PATH = os.path.join(DATA_DIR, 'submissions.json')
+MONGO_URI = os.environ.get('MONGO_URI', 'mongodb://localhost:27017/')
+client = MongoClient(MONGO_URI)
+db = client.get_default_database(default='offtake_db')
+master_col = db.master_data
+submissions_col = db.submissions
 
+DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
 os.makedirs(DATA_DIR, exist_ok=True)
 
 ADMIN_USERNAME = 'admin'
@@ -28,13 +32,11 @@ def require_admin(f):
     return decorated
 
 def get_master_data_json():
-    if not os.path.exists(MASTER_EXCEL_PATH):
-        return "[]"
     try:
-        df = pd.read_excel(MASTER_EXCEL_PATH)
-        return df.to_json(orient='records')
+        data = list(master_col.find({}, {'_id': False}))
+        return json.dumps(data)
     except Exception as e:
-        print("Error reading excel:", e)
+        print("Error reading from MongoDB:", e)
         return "[]"
 
 @app.route('/')
@@ -55,29 +57,19 @@ def get_data():
 @app.route('/api/submit', methods=['POST'])
 def submit():
     submission = request.json
-    submissions = []
-    if os.path.exists(SUBMISSIONS_PATH):
-        with open(SUBMISSIONS_PATH, 'r') as f:
-            try:
-                submissions = json.load(f)
-            except:
-                pass
-    
-    submissions.append(submission)
-    
-    with open(SUBMISSIONS_PATH, 'w') as f:
-        json.dump(submissions, f, indent=4)
-        
-    return jsonify({"status": "success", "message": "Data saved!"})
+    try:
+        submissions_col.insert_one(submission)
+        return jsonify({"status": "success", "message": "Data saved!"})
+    except Exception as e:
+        print(e)
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/api/admin/download', methods=['GET'])
 @require_admin
 def download():
-    if not os.path.exists(SUBMISSIONS_PATH):
+    submissions = list(submissions_col.find({}, {'_id': False}))
+    if not submissions:
         return "No submissions yet.", 404
-        
-    with open(SUBMISSIONS_PATH, 'r') as f:
-        submissions = json.load(f)
         
     rows = []
     for sub in submissions:
@@ -106,9 +98,15 @@ def download():
 @app.route('/api/admin/download_master', methods=['GET'])
 @require_admin
 def download_master():
-    if not os.path.exists(MASTER_EXCEL_PATH):
-        return "Master file not found.", 404
-    return send_file(MASTER_EXCEL_PATH, as_attachment=True, download_name='updated_master_data.xlsx')
+    data = list(master_col.find({}, {'_id': False}))
+    if not data:
+        return "Master file is empty.", 404
+    
+    df = pd.DataFrame(data)
+    export_path = os.path.join(DATA_DIR, 'export_master.xlsx')
+    df.to_excel(export_path, index=False)
+    
+    return send_file(export_path, as_attachment=True, download_name='updated_master_data.xlsx')
 
 @app.route('/api/admin/entity', methods=['POST'])
 @require_admin
@@ -121,11 +119,13 @@ def add_entity():
     if not name or not entity_type:
         return jsonify({"error": "Missing entity type or name."}), 400
         
-    if not os.path.exists(MASTER_EXCEL_PATH):
-        return jsonify({"error": "Master data file does not exist."}), 404
-        
     try:
-        df = pd.read_excel(MASTER_EXCEL_PATH)
+        current_data = list(master_col.find({}, {'_id': False}))
+        if not current_data:
+            df = pd.DataFrame()
+        else:
+            df = pd.DataFrame(current_data)
+            
         new_row = {col: None for col in df.columns}
         
         if entity_type == 'distributor':
@@ -133,48 +133,60 @@ def add_entity():
         elif entity_type == 'dsr':
             if not parent:
                 return jsonify({"error": "Distributor selection required for adding DSR."}), 400
-            parent_matches = df[df['Distributor Name'] == parent]
-            if not parent_matches.empty:
-                ref = parent_matches.iloc[0]
-                for col in ['HQ Name', 'distributor_code', 'Distributor Name']:
-                    if col in df.columns:
-                        new_row[col] = ref.get(col)
+            if not df.empty:
+                parent_matches = df[df['Distributor Name'] == parent]
+                if not parent_matches.empty:
+                    ref = parent_matches.iloc[0]
+                    for col in ['HQ Name', 'distributor_code', 'Distributor Name']:
+                        if col in df.columns:
+                            new_row[col] = ref.get(col)
+                else:
+                    new_row['Distributor Name'] = parent
             else:
                 new_row['Distributor Name'] = parent
             new_row['DSR Name'] = name
         elif entity_type == 'beat':
             if not parent:
                 return jsonify({"error": "DSR selection required for adding Beat Area."}), 400
-            parent_matches = df[df['DSR Name'] == parent]
-            if not parent_matches.empty:
-                ref = parent_matches.iloc[0]
-                for col in ['HQ Name', 'distributor_code', 'Distributor Name', 'SM Position code', 'DSR Name', 'Beat Day']:
-                    if col in df.columns:
-                        new_row[col] = ref.get(col)
+            if not df.empty:
+                parent_matches = df[df['DSR Name'] == parent]
+                if not parent_matches.empty:
+                    ref = parent_matches.iloc[0]
+                    for col in ['HQ Name', 'distributor_code', 'Distributor Name', 'SM Position code', 'DSR Name', 'Beat Day']:
+                        if col in df.columns:
+                            new_row[col] = ref.get(col)
+                else:
+                    new_row['DSR Name'] = parent
             else:
                 new_row['DSR Name'] = parent
             new_row['beat_name'] = name
         elif entity_type == 'retailer':
             if not parent:
                 return jsonify({"error": "Beat Area selection required for adding Retailer."}), 400
-            parent_matches = df[df['beat_name'] == parent]
-            if not parent_matches.empty:
-                ref = parent_matches.iloc[0]
-                for col in ['HQ Name', 'distributor_code', 'Distributor Name', 'SM Position code', 'DSR Name', 'beat_name', 'Beat Day']:
-                    if col in df.columns:
-                        new_row[col] = ref.get(col)
+            if not df.empty:
+                parent_matches = df[df['beat_name'] == parent]
+                if not parent_matches.empty:
+                    ref = parent_matches.iloc[0]
+                    for col in ['HQ Name', 'distributor_code', 'Distributor Name', 'SM Position code', 'DSR Name', 'beat_name', 'Beat Day']:
+                        if col in df.columns:
+                            new_row[col] = ref.get(col)
+                else:
+                    new_row['beat_name'] = parent
             else:
                 new_row['beat_name'] = parent
             new_row['retailer_name'] = name
         elif entity_type == 'store_product':
             if not parent:
                 return jsonify({"error": "Store (Retailer) selection required for adding a product."}), 400
-            parent_matches = df[df['retailer_name'] == parent]
-            if not parent_matches.empty:
-                ref = parent_matches.iloc[0]
-                for col in ['HQ Name', 'distributor_code', 'Distributor Name', 'SM Position code', 'DSR Name', 'beat_name', 'Beat Day', 'cmp_parent_retailer_code', 'retailer_name']:
-                    if col in df.columns:
-                        new_row[col] = ref.get(col)
+            if not df.empty:
+                parent_matches = df[df['retailer_name'] == parent]
+                if not parent_matches.empty:
+                    ref = parent_matches.iloc[0]
+                    for col in ['HQ Name', 'distributor_code', 'Distributor Name', 'SM Position code', 'DSR Name', 'beat_name', 'Beat Day', 'cmp_parent_retailer_code', 'retailer_name']:
+                        if col in df.columns:
+                            new_row[col] = ref.get(col)
+                else:
+                    new_row['retailer_name'] = parent
             else:
                 new_row['retailer_name'] = parent
             new_row['parent_material_desc'] = name
@@ -205,7 +217,13 @@ def add_entity():
             return jsonify({"error": "Invalid entity type."}), 400
             
         df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
-        df.to_excel(MASTER_EXCEL_PATH, index=False)
+        
+        # Save back to MongoDB
+        master_col.delete_many({})
+        records = df.to_dict('records')
+        if records:
+            master_col.insert_many(records)
+            
         return jsonify({"status": "success", "message": f"{entity_type.replace('_', ' ').upper()} '{name}' added successfully!"})
     except Exception as e:
         print("Error adding entity:", e)
@@ -222,33 +240,39 @@ def delete_entity():
     if not name or not entity_type:
         return jsonify({"error": "Missing entity type or name."}), 400
         
-    if not os.path.exists(MASTER_EXCEL_PATH):
-        return jsonify({"error": "Master data file does not exist."}), 404
-        
     try:
-        df = pd.read_excel(MASTER_EXCEL_PATH)
+        current_data = list(master_col.find({}, {'_id': False}))
+        if not current_data:
+            return jsonify({"error": "Master data is empty."}), 404
+            
+        df = pd.DataFrame(current_data)
+        
         if entity_type == 'store_product':
             if parent:
                 df = df[~((df['parent_material_desc'] == name) & (df['retailer_name'] == parent))]
             else:
                 df = df[df['parent_material_desc'] != name]
-            df.to_excel(MASTER_EXCEL_PATH, index=False)
-            return jsonify({"status": "success", "message": f"Product '{name}' deleted successfully!"})
+        else:
+            col_map = {
+                'distributor': 'Distributor Name',
+                'dsr': 'DSR Name',
+                'beat': 'beat_name',
+                'retailer': 'retailer_name'
+            }
             
-        col_map = {
-            'distributor': 'Distributor Name',
-            'dsr': 'DSR Name',
-            'beat': 'beat_name',
-            'retailer': 'retailer_name'
-        }
-        
-        target_col = col_map.get(entity_type)
-        if not target_col:
-            return jsonify({"error": "Invalid entity type."}), 400
+            target_col = col_map.get(entity_type)
+            if not target_col:
+                return jsonify({"error": "Invalid entity type."}), 400
+                
+            if target_col in df.columns:
+                df = df[df[target_col] != name]
+                
+        # Save back to MongoDB
+        master_col.delete_many({})
+        records = df.to_dict('records')
+        if records:
+            master_col.insert_many(records)
             
-        if target_col in df.columns:
-            df = df[df[target_col] != name]
-            df.to_excel(MASTER_EXCEL_PATH, index=False)
         return jsonify({"status": "success", "message": f"{entity_type.upper()} '{name}' deleted successfully!"})
     except Exception as e:
         print("Error deleting entity:", e)
@@ -266,16 +290,14 @@ def upload_master():
         
     if file and file.filename.endswith('.xlsx'):
         try:
-            # We first try to read it to ensure it's a valid pandas excel file
             df = pd.read_excel(file)
+            records = df.to_dict('records')
             
-            # Ensure the directory exists
-            os.makedirs(DATA_DIR, exist_ok=True)
-            
-            # Save the file replacing the old master data
-            df.to_excel(MASTER_EXCEL_PATH, index=False)
-            
-            return jsonify({"status": "success", "message": "Master data updated successfully!"})
+            master_col.delete_many({})
+            if records:
+                master_col.insert_many(records)
+                
+            return jsonify({"status": "success", "message": "Master data uploaded to MongoDB successfully!"})
         except Exception as e:
             print("Error uploading master data:", e)
             return jsonify({"error": "Failed to parse or save the uploaded Excel file. Ensure it is a valid .xlsx file."}), 500
